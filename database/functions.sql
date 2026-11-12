@@ -1,0 +1,2 @@
+CREATE OR REPLACE FUNCTION attendance_percentage(p_student_id BIGINT) RETURNS NUMERIC LANGUAGE SQL STABLE AS $$ SELECT COALESCE(ROUND(100.0*COUNT(*) FILTER(WHERE status='Present')/NULLIF(COUNT(*),0),2),0) FROM attendance WHERE student_id=p_student_id $$;
+CREATE OR REPLACE FUNCTION student_pending_fees(p_student_id BIGINT) RETURNS NUMERIC LANGUAGE SQL STABLE AS $$ SELECT COALESCE(SUM(amount),0) FROM fee_payment WHERE student_id=p_student_id AND payment_status='Pending' $$;
