@@ -67,3 +67,30 @@ DROP TRIGGER IF EXISTS trg_validate_exam_max_update ON exam;
 CREATE TRIGGER trg_validate_exam_max_update
 BEFORE UPDATE OF max_marks ON exam
 FOR EACH ROW EXECUTE FUNCTION validate_exam_max_marks_update();
+
+-- Every exam must use a subject assigned to its class for that class's academic year.
+CREATE OR REPLACE FUNCTION validate_exam_subject_assignment()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  v_year VARCHAR(9);
+BEGIN
+  SELECT academic_year INTO v_year FROM class WHERE class_id=NEW.class_id;
+  IF v_year IS NULL THEN
+    RAISE EXCEPTION 'Exam class does not exist';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM class_subject
+    WHERE class_id=NEW.class_id
+      AND subject_id=NEW.subject_id
+      AND academic_year=v_year
+  ) THEN
+    RAISE EXCEPTION 'Subject is not assigned to this class for the academic year';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_validate_exam_subject ON exam;
+CREATE TRIGGER trg_validate_exam_subject
+BEFORE INSERT OR UPDATE OF class_id,subject_id
+ON exam FOR EACH ROW EXECUTE FUNCTION validate_exam_subject_assignment();
