@@ -1,0 +1,3 @@
+CREATE OR REPLACE FUNCTION validate_exam_result_marks() RETURNS TRIGGER LANGUAGE plpgsql AS $$ DECLARE max_allowed NUMERIC(7,2); BEGIN SELECT max_marks INTO max_allowed FROM exam WHERE exam_id=NEW.exam_id; IF max_allowed IS NULL THEN RAISE EXCEPTION 'Exam not found'; END IF; IF NEW.marks_obtained>max_allowed THEN RAISE EXCEPTION 'Marks exceed exam maximum (%)',max_allowed; END IF; RETURN NEW; END; $$;
+DROP TRIGGER IF EXISTS trg_validate_exam_marks ON exam_result;
+CREATE TRIGGER trg_validate_exam_marks BEFORE INSERT OR UPDATE OF exam_id,marks_obtained ON exam_result FOR EACH ROW EXECUTE FUNCTION validate_exam_result_marks();
