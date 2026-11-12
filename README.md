@@ -13,15 +13,15 @@ The SQL schema maps the 11 entities in the revised ER diagram. It includes keys,
 3. Copy-Item .env.example .env.local and set local secrets.
 4. psql -U postgres -c "CREATE DATABASE school_erp;"
 5. psql -U postgres -d school_erp -f database/schema.sql
-6. Run database/functions.sql, procedures.sql, triggers.sql, views.sql and seed.sql with psql -U postgres -d school_erp -f database/FILE.sql.
+6. Run each remaining script in this order: functions.sql, procedures.sql, triggers.sql, views.sql, seed.sql. Example: psql -U postgres -d school_erp -f database/functions.sql
 7. npm install; npm run dev.
-8. Start Redis Stack and run redis-cli -h localhost -p 6379 < redis/schema.redis.
+8. Start Redis Stack. Apply the single-line index command in redis/schema.redis using redis-cli. Example: Get-Content .\redis\schema.redis | ForEach-Object { redis-cli $_ }
 
 ## Current implementation boundaries — read before evaluation
 This repository is an initial implementation foundation, not a verified complete submission. The current web app has login, dashboard and student read/create API basics; full teacher, attendance, examinations, fees and notice CRUD pages/APIs are not yet implemented. Create app_user records with bcrypt hashes before login; no default credentials are provided. The Redis index and JSON command examples exist, but actual embedding generation, vector ingestion/KNN API and complete Redis CRUD integration are not implemented. The RLS SQL is a demonstration baseline; it is not yet wired to authenticated app requests and must not be represented as verified database-level isolation. The application database role must be configured and tested separately. All tests are pending until run on the target machine. Never commit credentials.
 
 ## SQL demonstrations
-Run queries.sql after schema and seed. Functions: attendance_percentage(student_id), student_pending_fees(student_id). Procedure: CALL record_attendance(student_id,date,status,teacher_id,remarks). Trigger rejects exam results above maximum marks. View: student_academic_summary.
+Run database/queries.sql after schema and seed. Functions: attendance_percentage(student_id), student_pending_fees(student_id). Procedure: CALL record_attendance(student_id,date,status,teacher_id,remarks). Trigger rejects exam results above maximum marks. View: student_academic_summary.
 
 ## Validation
 See docs/TEST_PLAN.md. No build, database, Redis, authorization or end-to-end tests have been executed in this environment. Do not claim completed marks without live demonstrations and evidence.
