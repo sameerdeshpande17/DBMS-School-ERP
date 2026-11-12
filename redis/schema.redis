@@ -1,0 +1,1 @@
+FT.CREATE idx:school_resources ON JSON PREFIX 1 school:resource: SCHEMA $.title AS title TEXT $.category AS category TAG $.body AS body TEXT $.embedding AS embedding VECTOR HNSW 6 TYPE FLOAT32 DIM 384 DISTANCE_METRIC COSINE
