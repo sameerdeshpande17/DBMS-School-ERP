@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server";import {currentSession,Role} from "./auth";export async function requireRole(roles:Role[]){const session=await currentSession();if(!session)return {error:NextResponse.json({error:"Unauthenticated"},{status:401})};if(!roles.includes(session.role))return {error:NextResponse.json({error:"Forbidden"},{status:403})};return {session}}
