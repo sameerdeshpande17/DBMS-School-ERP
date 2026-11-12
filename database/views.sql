@@ -1,0 +1,1 @@
+CREATE OR REPLACE VIEW student_academic_summary AS SELECT s.student_id,s.admission_no,s.first_name,s.last_name,c.class_name,c.section,COUNT(er.result_id) exams_taken,ROUND(AVG(er.marks_obtained),2) average_marks FROM student s JOIN class c USING(class_id) LEFT JOIN exam_result er USING(student_id) GROUP BY s.student_id,c.class_name,c.section;
