@@ -1,0 +1,2 @@
+# ER diagram mapping
+The approved diagram contains TEACHER, CLASS, STUDENT, SUBJECT, CLASS_SUBJECT, ATTENDANCE, EXAM, EXAM_RESULT, FEE_PAYMENT, NOTICE and APP_USER. The SQL schema maps these to tables. CLASS_SUBJECT resolves class/subject/teacher allocation. Attendance is unique per student/date; exam result is unique per exam/student. APP_USER enforces role-dependent optional student/teacher references with a CHECK constraint.
