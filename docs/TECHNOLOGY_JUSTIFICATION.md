@@ -1,0 +1,2 @@
+# Technology justification
+PostgreSQL is the source of truth for relational school records, constraints, joins, transactions and RLS. Redis Stack stores flexible JSON resources and supports text/vector retrieval. Next.js and TypeScript provide the UI and server API. pg and ioredis connect to the databases. bcrypt hashes passwords and signed HTTP-only cookies carry sessions.
