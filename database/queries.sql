@@ -6,5 +6,5 @@ SELECT s.admission_no,a.attendance_date,a.status FROM student s LEFT JOIN attend
 SELECT c.class_name,s.subject_name,t.full_name FROM class_subject cs JOIN class c USING(class_id) JOIN subject s USING(subject_id) JOIN teacher t USING(teacher_id);
 SELECT * FROM student WHERE class_id IN(SELECT class_id FROM exam);
 SELECT s.* FROM student s WHERE EXISTS(SELECT 1 FROM fee_payment f WHERE f.student_id=s.student_id AND f.payment_status='Paid');
-WITH at AS(SELECT student_id,COUNT(*) days,COUNT(*) FILTER(WHERE status='Present') present FROM attendance GROUP BY student_id) SELECT s.admission_no,COALESCE(ROUND(100.0*a.present/NULLIF(a.days,0),2),0) attendance_pct FROM student s LEFT JOIN at a USING(student_id);
+WITH attendance_totals AS (SELECT student_id,COUNT(*) AS total_days,COUNT(*) FILTER(WHERE status='Present') AS present_days FROM attendance GROUP BY student_id) SELECT s.admission_no,COALESCE(ROUND(100.0*a.present_days/NULLIF(a.total_days,0),2),0) AS attendance_pct FROM student s LEFT JOIN attendance_totals a USING(student_id);
 WITH RECURSIVE levels(n) AS(SELECT 1 UNION ALL SELECT n+1 FROM levels WHERE n<10) SELECT n FROM levels;
