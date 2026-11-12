@@ -1,0 +1,1 @@
+import Link from "next/link";export default function Home(){return <main className="shell"><h1>School ERP</h1><section className="panel"><p>Academic and administrative portal.</p><Link href="/login">Sign in →</Link></section></main>}
