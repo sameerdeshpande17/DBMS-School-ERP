@@ -9,6 +9,7 @@ function readHidden(prompt) {
     const output = process.stdout;
     output.write(prompt);
     emitKeypressEvents(input);
+    input.resume();
     if (input.isTTY) input.setRawMode(true);
     let value = "";
     const onKey = (character, key) => {
