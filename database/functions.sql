@@ -1,4 +1,6 @@
 USE school_erp;
+DROP FUNCTION IF EXISTS fn_attendance_percentage;
+DROP FUNCTION IF EXISTS fn_total_fees_paid;
 DELIMITER $$
 CREATE FUNCTION fn_attendance_percentage(p_student_id BIGINT UNSIGNED)
 RETURNS DECIMAL(5,2) READS SQL DATA
