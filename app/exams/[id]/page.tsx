@@ -1,0 +1,2 @@
+import {notFound,redirect} from "next/navigation";import {getSession} from "@/lib/auth";import ExamResultsManager from "@/components/exam-results-manager";
+export default async function Page({params}:{params:Promise<{id:string}>}){const user=await getSession();if(!user)redirect("/login");const {id}=await params;if(!/^\d+$/.test(id))notFound();return <ExamResultsManager examId={id} role={user.role}/>;}
