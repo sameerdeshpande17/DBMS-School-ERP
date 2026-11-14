@@ -25,7 +25,8 @@ export default function LoginPage() {
         setError(data.message || "Sign in failed.");
         return;
       }
-      router.push("/");
+      const destination = data.user?.role === "STUDENT" ? "/student" : data.user?.role === "TEACHER" ? "/teacher" : "/";
+      router.push(destination);
       router.refresh();
     } catch {
       setError("Unable to contact the server. Please try again.");
