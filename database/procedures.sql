@@ -1,4 +1,5 @@
 USE school_erp;
+DROP PROCEDURE IF EXISTS sp_mark_attendance;
 DELIMITER $$
 CREATE PROCEDURE sp_mark_attendance(IN p_student_id BIGINT UNSIGNED,IN p_date DATE,IN p_status VARCHAR(10),IN p_teacher_id BIGINT UNSIGNED)
 BEGIN
