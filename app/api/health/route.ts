@@ -11,6 +11,24 @@ interface HealthRow extends RowDataPacket {
 }
 
 export async function GET() {
+  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+  const hasSplitConfig = Boolean(
+    process.env.DB_USER &&
+    process.env.DB_PASSWORD &&
+    process.env.DB_NAME
+  );
+
+  if (!hasDatabaseUrl && !hasSplitConfig) {
+    return NextResponse.json(
+      {
+        status: "error",
+        message:
+          "Database configuration is missing. Set DATABASE_URL or DB_USER, DB_PASSWORD and DB_NAME in .env.local.",
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const connection = await db.getConnection();
     try {
@@ -29,7 +47,8 @@ export async function GET() {
     return NextResponse.json(
       {
         status: "error",
-        message: "Unable to connect to the configured MySQL database.",
+        message:
+          "Unable to connect to MySQL. Check the local host, port, username and password settings.",
       },
       { status: 503 }
     );
