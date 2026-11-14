@@ -1,4 +1,7 @@
 USE school_erp;
+DROP TRIGGER IF EXISTS trg_exam_result_validate_insert;
+DROP TRIGGER IF EXISTS trg_exam_result_validate_update;
+DROP TRIGGER IF EXISTS trg_exam_max_marks_update;
 DELIMITER $$
 CREATE TRIGGER trg_exam_result_validate_insert BEFORE INSERT ON exam_result FOR EACH ROW
 BEGIN
