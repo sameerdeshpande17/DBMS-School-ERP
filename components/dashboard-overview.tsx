@@ -11,7 +11,8 @@ type DashboardData = {
 const modules = [
   ["Students", "Admissions, student profiles and class allocation", "/students"],
   ["Teachers", "Teacher directory and class assignments", "/teachers"],
-  ["Classes & Subjects", "Academic structure and subject mapping", "/classes"],
+  ["Classes & Subjects", "Academic structure and class setup", "/classes"],
+  ["Subject Assignments", "Map subjects and teachers to classes", "/class-subjects"],
   ["Attendance", "Daily attendance and attendance summaries", "/attendance"],
   ["Examinations", "Exams, marks and academic performance", "/exams"],
   ["Fee Payments", "Payment records and fee summaries", "/fees"],
