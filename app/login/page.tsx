@@ -25,7 +25,7 @@ export default function LoginPage() {
         setError(data.message || "Sign in failed.");
         return;
       }
-      const destination = data.user?.role === "STUDENT" ? "/student" : "/";
+      const destination = data.user?.role === "STUDENT" ? "/student" : data.user?.role === "TEACHER" ? "/teacher" : "/";
       router.push(destination);
       router.refresh();
     } catch {
@@ -47,7 +47,7 @@ export default function LoginPage() {
         <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         {error && <p className="login-error" role="alert">{error}</p>}
         <button className="login-submit" type="submit" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</button>
-        <p className="login-description"><a href="/student-login">Student login ↗</a></p>
+        <p className="login-description"><a href="/teacher-login">Teacher login ↗</a> · <a href="/student-login">Student login ↗</a></p>
       </form>
     </main>
   );
