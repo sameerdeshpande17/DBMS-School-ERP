@@ -1,2 +1,20 @@
-CREATE OR REPLACE FUNCTION attendance_percentage(p_student_id BIGINT) RETURNS NUMERIC LANGUAGE SQL STABLE AS $$ SELECT COALESCE(ROUND(100.0*COUNT(*) FILTER(WHERE status='Present')/NULLIF(COUNT(*),0),2),0) FROM attendance WHERE student_id=p_student_id $$;
-CREATE OR REPLACE FUNCTION student_pending_fees(p_student_id BIGINT) RETURNS NUMERIC LANGUAGE SQL STABLE AS $$ SELECT COALESCE(SUM(amount),0) FROM fee_payment WHERE student_id=p_student_id AND payment_status='Pending' $$;
+USE school_erp;
+DELIMITER $$
+CREATE FUNCTION fn_attendance_percentage(p_student_id BIGINT UNSIGNED)
+RETURNS DECIMAL(5,2) READS SQL DATA
+BEGIN
+ DECLARE v_total INT DEFAULT 0; DECLARE v_present INT DEFAULT 0;
+ SELECT COUNT(*),COALESCE(SUM(status IN ('PRESENT','LATE')),0) INTO v_total,v_present
+ FROM attendance WHERE student_id=p_student_id;
+ IF v_total=0 THEN RETURN 0.00; END IF;
+ RETURN ROUND(v_present*100/v_total,2);
+END$$
+CREATE FUNCTION fn_total_fees_paid(p_student_id BIGINT UNSIGNED)
+RETURNS DECIMAL(12,2) READS SQL DATA
+BEGIN
+ DECLARE v_total DECIMAL(12,2) DEFAULT 0;
+ SELECT COALESCE(SUM(amount),0) INTO v_total FROM fee_payment
+ WHERE student_id=p_student_id AND payment_status='PAID';
+ RETURN v_total;
+END$$
+DELIMITER ;

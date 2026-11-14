@@ -1,27 +1,36 @@
-# School ERP
-PES University DBMS Experiential Learning Level 3 mini-project.
+# School ERP — MySQL 8.4 + Redis Stack
 
-## Technology
-PostgreSQL, Redis Stack (RedisJSON/RediSearch), Next.js, TypeScript, pg, ioredis, bcryptjs and signed HTTP-only cookie sessions.
+Database-first School ERP for the PES DBMS Level 3 project.
 
-## Relational design
-The SQL schema maps the 11 entities in the revised ER diagram. It includes keys, foreign keys, CHECK/UNIQUE constraints, indexes, sample data, DML, joins, nested and correlated queries, CTEs, a recursive CTE, functions, procedure, trigger and view. See database/.
+## Architecture
+- Primary relational database (~80%): MySQL 8.4. All authoritative school records and assessed relational DBMS concepts live here.
+- Secondary database (~20%): Redis Stack for JSON notice/resource documents and vector retrieval.
+- Frontend/backend: Next.js + TypeScript (to be implemented in the next stage).
 
-## Setup (Windows PowerShell)
-1. git clone https://github.com/sameerdeshpande17/DBMS-School-ERP.git
-2. cd DBMS-School-ERP
-3. Copy-Item .env.example .env.local and set local secrets.
-4. psql -U postgres -c "CREATE DATABASE school_erp;"
-5. psql -U postgres -d school_erp -f database/schema.sql
-6. Run each remaining script in this order: functions.sql, procedures.sql, triggers.sql, views.sql, seed.sql. Example: psql -U postgres -d school_erp -f database/functions.sql
-7. npm install; npm run dev.
-8. Start Redis Stack. Apply the single-line index command in redis/schema.redis using redis-cli. Example: Get-Content .\redis\schema.redis | ForEach-Object { redis-cli $_ }
+The 11 ER entities are TEACHER, CLASS, STUDENT, SUBJECT, CLASS_SUBJECT, ATTENDANCE, EXAM, EXAM_RESULT, FEE_PAYMENT, NOTICE and APP_USER.
 
-## Current implementation boundaries — read before evaluation
-This repository is an initial implementation foundation, not a verified complete submission. The current web app has login, dashboard and student read/create API basics; full teacher, attendance, examinations, fees and notice CRUD pages/APIs are not yet implemented. Create app_user records with bcrypt hashes before login; no default credentials are provided. The Redis index and JSON command examples exist, but actual embedding generation, vector ingestion/KNN API and complete Redis CRUD integration are not implemented. The RLS SQL is a demonstration baseline; it is not yet wired to authenticated app requests and must not be represented as verified database-level isolation. The application database role must be configured and tested separately. All tests are pending until run on the target machine. Never commit credentials.
+## MySQL setup (Windows PowerShell)
+Install MySQL Server 8.4 and the MySQL command-line client. PostgreSQL is not used by this project.
 
-## SQL demonstrations
-Run database/queries.sql after schema and seed. Run `psql -U postgres -d school_erp -f database/tests.sql` after `triggers.sql` and `seed.sql`; it executes rollback-safe integrity checks for duplicate attendance, exam marks, cross-class results and maximum-mark changes. Functions: attendance_percentage(student_id), student_pending_fees(student_id). Procedure: CALL record_attendance(student_id,date,status,teacher_id,remarks). Trigger rejects exam results above maximum marks. View: student_academic_summary.
+Create the database in MySQL Workbench or run:
 
-## Validation
-See docs/TEST_PLAN.md. No build, database, Redis, authorization or end-to-end tests have been executed in this environment. Do not claim completed marks without live demonstrations and evidence.
+    mysql -u root -p -e "CREATE DATABASE school_erp CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+
+Execute scripts in this order:
+
+    mysql -u root -p school_erp < database/schema.sql
+    mysql -u root -p school_erp < database/seed.sql
+    mysql -u root -p school_erp < database/functions.sql
+    mysql -u root -p school_erp < database/procedures.sql
+    mysql -u root -p school_erp < database/triggers.sql
+    mysql -u root -p school_erp < database/views.sql
+    mysql -u root -p school_erp < database/queries.sql
+    mysql -u root -p school_erp < database/tests.sql
+
+Run database/roles.sql separately as root after changing its example password.
+
+## Redis Stack
+See redis/README.md. Redis is a secondary document/vector store, not the source of truth.
+
+## Status
+The repository is being rebuilt in stages. The SQL foundation is first. Do not treat the Next.js application, authentication, full Redis integration or final validation as complete until their implementations and local test evidence are added.

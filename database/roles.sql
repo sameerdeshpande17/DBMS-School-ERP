@@ -1,6 +1,13 @@
--- Run as database owner. Change password securely; do not use postgres as app login.
-DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='school_app') THEN CREATE ROLE school_app LOGIN PASSWORD 'CHANGE_ME'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='school_student') THEN CREATE ROLE school_student NOLOGIN; END IF; END $$;
-GRANT CONNECT ON DATABASE school_erp TO school_app; GRANT USAGE ON SCHEMA public TO school_app; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO school_app; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO school_app;
-ALTER TABLE student ENABLE ROW LEVEL SECURITY; DROP POLICY IF EXISTS student_self ON student; CREATE POLICY student_self ON student FOR SELECT TO school_student USING(student_id=NULLIF(current_setting('app.student_id',true),'')::BIGINT); GRANT SELECT ON student TO school_student;
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY; DROP POLICY IF EXISTS attendance_self ON attendance; CREATE POLICY attendance_self ON attendance FOR SELECT TO school_student USING(student_id=NULLIF(current_setting('app.student_id',true),'')::BIGINT); GRANT SELECT ON attendance TO school_student;
-ALTER TABLE exam_result ENABLE ROW LEVEL SECURITY; DROP POLICY IF EXISTS result_self ON exam_result; CREATE POLICY result_self ON exam_result FOR SELECT TO school_student USING(student_id=NULLIF(current_setting('app.student_id',true),'')::BIGINT); GRANT SELECT ON exam_result TO school_student;
+-- Run as MySQL root on a local development instance. Change the example password first.
+CREATE ROLE IF NOT EXISTS 'school_admin_role','school_teacher_role','school_student_role';
+GRANT SELECT,INSERT,UPDATE,DELETE ON school_erp.* TO 'school_admin_role';
+GRANT SELECT ON school_erp.student TO 'school_teacher_role';
+GRANT SELECT,INSERT,UPDATE ON school_erp.attendance TO 'school_teacher_role';
+GRANT SELECT ON school_erp.exam TO 'school_teacher_role';
+GRANT SELECT ON school_erp.exam_result TO 'school_teacher_role';
+GRANT SELECT ON school_erp.notice TO 'school_teacher_role';
+GRANT SELECT ON school_erp.notice TO 'school_student_role';
+-- MySQL has no PostgreSQL-style native row-level security. Student-specific row filtering
+-- must be implemented in parameterized authenticated application queries/views.
+CREATE USER IF NOT EXISTS 'school_app'@'localhost' IDENTIFIED BY 'CHANGE_THIS_PASSWORD';
+GRANT SELECT,INSERT,UPDATE,DELETE,EXECUTE ON school_erp.* TO 'school_app'@'localhost';

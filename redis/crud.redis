@@ -1,4 +1,0 @@
-JSON.SET school:resource:notice-1 $ '{"title":"Mathematics revision","category":"Academic","body":"Revision schedule for mathematics examination."}'
-JSON.GET school:resource:notice-1
-JSON.SET school:resource:notice-1 $.body '"Updated revision schedule and worksheet."'
-JSON.DEL school:resource:notice-1

@@ -1,96 +1,25 @@
--- Validate result ownership, class membership and exam maximum marks.
-CREATE OR REPLACE FUNCTION validate_exam_result_marks()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE
-  exam_max NUMERIC(7,2);
-  exam_class BIGINT;
-  student_class BIGINT;
-  exam_subject BIGINT;
-  class_year VARCHAR(9);
+USE school_erp;
+DELIMITER $$
+CREATE TRIGGER trg_exam_result_validate_insert BEFORE INSERT ON exam_result FOR EACH ROW
 BEGIN
-  SELECT e.max_marks,e.class_id,e.subject_id,c.academic_year
-    INTO exam_max,exam_class,exam_subject,class_year
-  FROM exam e JOIN class c ON c.class_id=e.class_id
-  WHERE e.exam_id=NEW.exam_id;
-
-  IF exam_max IS NULL THEN
-    RAISE EXCEPTION 'Exam % does not exist',NEW.exam_id;
-  END IF;
-
-  SELECT class_id INTO student_class
-  FROM student WHERE student_id=NEW.student_id;
-
-  IF student_class IS NULL THEN
-    RAISE EXCEPTION 'Student % does not exist',NEW.student_id;
-  END IF;
-
-  IF student_class <> exam_class THEN
-    RAISE EXCEPTION 'Student must belong to the class for this exam';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM class_subject cs
-    WHERE cs.class_id=exam_class
-      AND cs.subject_id=exam_subject
-      AND cs.academic_year=class_year
-  ) THEN
-    RAISE EXCEPTION 'Exam subject is not assigned to this class for the academic year';
-  END IF;
-
-  IF NEW.marks_obtained > exam_max THEN
-    RAISE EXCEPTION 'Marks (%) cannot exceed exam maximum (%)',NEW.marks_obtained,exam_max;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_validate_exam_marks ON exam_result;
-CREATE TRIGGER trg_validate_exam_marks
-BEFORE INSERT OR UPDATE OF exam_id,student_id,marks_obtained
-ON exam_result FOR EACH ROW EXECUTE FUNCTION validate_exam_result_marks();
-
--- Prevent lowering maximum marks below already recorded results.
-CREATE OR REPLACE FUNCTION validate_exam_max_marks_update()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
+ DECLARE v_max DECIMAL(7,2); DECLARE v_exam_class BIGINT UNSIGNED; DECLARE v_student_class BIGINT UNSIGNED;
+ SELECT max_marks,class_id INTO v_max,v_exam_class FROM exam WHERE exam_id=NEW.exam_id;
+ SELECT class_id INTO v_student_class FROM student WHERE student_id=NEW.student_id;
+ IF NEW.marks_obtained>v_max THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Marks exceed exam maximum'; END IF;
+ IF v_exam_class<>v_student_class THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Student is not in exam class'; END IF;
+END$$
+CREATE TRIGGER trg_exam_result_validate_update BEFORE UPDATE ON exam_result FOR EACH ROW
 BEGIN
-  IF EXISTS (
-    SELECT 1 FROM exam_result
-    WHERE exam_id=NEW.exam_id AND marks_obtained>NEW.max_marks
-  ) THEN
-    RAISE EXCEPTION 'New maximum marks cannot be lower than an existing result';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_validate_exam_max_update ON exam;
-CREATE TRIGGER trg_validate_exam_max_update
-BEFORE UPDATE OF max_marks ON exam
-FOR EACH ROW EXECUTE FUNCTION validate_exam_max_marks_update();
-
--- Every exam must use a subject assigned to its class for that class's academic year.
-CREATE OR REPLACE FUNCTION validate_exam_subject_assignment()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE
-  v_year VARCHAR(9);
+ DECLARE v_max DECIMAL(7,2); DECLARE v_exam_class BIGINT UNSIGNED; DECLARE v_student_class BIGINT UNSIGNED;
+ SELECT max_marks,class_id INTO v_max,v_exam_class FROM exam WHERE exam_id=NEW.exam_id;
+ SELECT class_id INTO v_student_class FROM student WHERE student_id=NEW.student_id;
+ IF NEW.marks_obtained>v_max THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Marks exceed exam maximum'; END IF;
+ IF v_exam_class<>v_student_class THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Student is not in exam class'; END IF;
+END$$
+CREATE TRIGGER trg_exam_max_marks_update BEFORE UPDATE ON exam FOR EACH ROW
 BEGIN
-  SELECT academic_year INTO v_year FROM class WHERE class_id=NEW.class_id;
-  IF v_year IS NULL THEN
-    RAISE EXCEPTION 'Exam class does not exist';
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM class_subject
-    WHERE class_id=NEW.class_id
-      AND subject_id=NEW.subject_id
-      AND academic_year=v_year
-  ) THEN
-    RAISE EXCEPTION 'Subject is not assigned to this class for the academic year';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_validate_exam_subject ON exam;
-CREATE TRIGGER trg_validate_exam_subject
-BEFORE INSERT OR UPDATE OF class_id,subject_id
-ON exam FOR EACH ROW EXECUTE FUNCTION validate_exam_subject_assignment();
+ IF EXISTS(SELECT 1 FROM exam_result WHERE exam_id=OLD.exam_id AND marks_obtained>NEW.max_marks) THEN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Maximum marks cannot undercut existing results';
+ END IF;
+END$$
+DELIMITER ;
