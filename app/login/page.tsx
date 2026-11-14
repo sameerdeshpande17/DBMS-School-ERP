@@ -25,7 +25,7 @@ export default function LoginPage() {
         setError(data.message || "Sign in failed.");
         return;
       }
-      const destination = data.user?.role === "STUDENT" ? "/student" : data.user?.role === "TEACHER" ? "/teacher" : "/";
+      const destination = data.user?.role === "STUDENT" ? "/student" : "/";
       router.push(destination);
       router.refresh();
     } catch {
