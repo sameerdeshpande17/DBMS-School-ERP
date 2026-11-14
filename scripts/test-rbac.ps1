@@ -64,7 +64,7 @@ function Invoke-RoleTests {
     $logoutOk = ($logout -eq 200 -and $meAfterLogout -eq 401)
     if (-not $logoutOk) { $failed++ }
     Write-Host ("{0,-5} {1}" -f $(if($logoutOk){"PASS"}else{"FAIL"}),"Logout invalidates session") -ForegroundColor $(if($logoutOk){"Green"}else{"Red"})
-    Write-Host "$Role: $($tests.Count + 1 - $failed)/$($tests.Count + 1) passed" -ForegroundColor $(if($failed -eq 0){"Green"}else{"Red"})
+    Write-Host "${Role}: $($tests.Count + 1 - $failed)/$($tests.Count + 1) passed" -ForegroundColor $(if($failed -eq 0){"Green"}else{"Red"})
     return $failed
 }
 
