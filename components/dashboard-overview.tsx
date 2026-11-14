@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 type DashboardData = {
   counts: { students: number; teachers: number; classes: number; subjects: number };
   notices: { notice_id: number; title: string; audience: string; published_at: string | null }[];
+  user: { username: string; role: "ADMIN" | "TEACHER" | "STUDENT" };
 };
 
 const modules = [
@@ -20,6 +21,7 @@ const modules = [
 export default function DashboardOverview() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
+  const [currentUser, setCurrentUser] = useState<DashboardData["user"] | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -27,7 +29,7 @@ export default function DashboardOverview() {
         if (!response.ok) throw new Error("Dashboard data could not be loaded.");
         return (await response.json()) as DashboardData;
       })
-      .then(setData)
+      .then((result) => { setData(result); setCurrentUser(result.user); })
       .catch((reason: Error) => setError(reason.message));
   }, []);
 
@@ -42,7 +44,11 @@ export default function DashboardOverview() {
     <main className="dashboard">
       <header className="topbar">
         <div><span className="eyebrow">SCHOOL MANAGEMENT</span><h1>School ERP</h1></div>
-        <span className="database-status">MySQL connected</span>
+        <div className="account-actions">
+          {currentUser && <span className="account-label">{currentUser.username} · {currentUser.role}</span>}
+          <span className="database-status">MySQL connected</span>
+          <button className="secondary-button" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}>Sign out</button>
+        </div>
       </header>
 
       <section className="welcome">
