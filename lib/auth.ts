@@ -1,5 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import type { RowDataPacket } from "mysql2";
+import { db } from "@/lib/db";
 
 export const SESSION_COOKIE = "school_erp_session";
 export type UserRole = "ADMIN" | "TEACHER" | "STUDENT";
@@ -12,11 +14,17 @@ export interface SessionUser {
   studentId: number | null;
 }
 
+interface CurrentAccount extends RowDataPacket {
+  username: string;
+  role: UserRole;
+  teacher_id: number | null;
+  student_id: number | null;
+  is_active: number;
+}
+
 function getSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET;
-  if (!secret || Buffer.byteLength(secret) < 32) {
-    throw new Error("SESSION_SECRET must be set to at least 32 bytes.");
-  }
+  if (!secret || Buffer.byteLength(secret) < 32) throw new Error("SESSION_SECRET must be set to at least 32 bytes.");
   return new TextEncoder().encode(secret);
 }
 
@@ -37,22 +45,24 @@ export async function createSession(user: SessionUser): Promise<string> {
 export async function getSession(): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    if (
-      typeof payload.sub !== "string" ||
-      typeof payload.username !== "string" ||
-      !["ADMIN", "TEACHER", "STUDENT"].includes(String(payload.role))
-    ) return null;
+    if (typeof payload.sub !== "string" || !/^\d+$/.test(payload.sub)) return null;
+    if (typeof payload.username !== "string" || !["ADMIN", "TEACHER", "STUDENT"].includes(String(payload.role))) return null;
 
-    return {
-      userId: Number(payload.sub),
-      username: payload.username,
-      role: payload.role as UserRole,
-      teacherId: typeof payload.teacherId === "number" ? payload.teacherId : null,
-      studentId: typeof payload.studentId === "number" ? payload.studentId : null,
-    };
+    const [rows] = await db.execute<CurrentAccount[]>(
+      "SELECT username, role, teacher_id, student_id, is_active FROM app_user WHERE user_id = ? LIMIT 1",
+      [Number(payload.sub)]
+    );
+    const account = rows[0];
+    if (!account || !account.is_active || account.username !== payload.username || account.role !== payload.role) return null;
+
+    const teacherId = account.teacher_id === null ? null : Number(account.teacher_id);
+    const studentId = account.student_id === null ? null : Number(account.student_id);
+    if (teacherId !== (typeof payload.teacherId === "number" ? payload.teacherId : null)) return null;
+    if (studentId !== (typeof payload.studentId === "number" ? payload.studentId : null)) return null;
+
+    return { userId: Number(payload.sub), username: account.username, role: account.role, teacherId, studentId };
   } catch {
     return null;
   }
