@@ -50,8 +50,10 @@ export async function GET() {
       const [classes] = await connection.execute<CountRow[]>(classesQuery, classParams);
       const [subjects] = await connection.query<CountRow[]>("SELECT COUNT(*) AS total FROM subject");
       const [notices] = await connection.execute<NoticeRow[]>(
-        "SELECT notice_id, title, audience, published_at FROM notice WHERE status = 'PUBLISHED' AND (audience = 'ALL' OR audience = ?) AND (expires_at IS NULL OR expires_at >= NOW()) ORDER BY published_at DESC LIMIT 5",
-        [user.role]
+        user.role === "ADMIN"
+          ? "SELECT notice_id, title, audience, published_at FROM notice WHERE status IN ('DRAFT','PUBLISHED') ORDER BY COALESCE(published_at,'9999-12-31') DESC LIMIT 5"
+          : "SELECT notice_id, title, audience, published_at FROM notice WHERE status = 'PUBLISHED' AND (audience = 'ALL' OR audience = ?) AND (expires_at IS NULL OR expires_at >= NOW()) ORDER BY published_at DESC LIMIT 5",
+        user.role === "ADMIN" ? [] : [user.role]
       );
       return NextResponse.json({
         user: { username: user.username, role: user.role },
