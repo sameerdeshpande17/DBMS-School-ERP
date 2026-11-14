@@ -51,7 +51,7 @@ export async function getSession(): Promise<SessionUser | null> {
     if (typeof payload.username !== "string" || !["ADMIN", "TEACHER", "STUDENT"].includes(String(payload.role))) return null;
 
     const [rows] = await db.execute<CurrentAccount[]>(
-      "SELECT username, role, teacher_id, student_id, is_active FROM app_user WHERE user_id = ? LIMIT 1",
+      "SELECT u.username, u.role, u.teacher_id, u.student_id, u.is_active FROM app_user u LEFT JOIN teacher t ON t.teacher_id = u.teacher_id LEFT JOIN student s ON s.student_id = u.student_id WHERE u.user_id = ? AND (u.role <> 'TEACHER' OR t.status = 'ACTIVE') AND (u.role <> 'STUDENT' OR s.status = 'ACTIVE') LIMIT 1",
       [Number(payload.sub)]
     );
     const account = rows[0];
