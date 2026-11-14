@@ -1,37 +1,10 @@
-import { NextResponse } from "next/server";
-import type { RowDataPacket } from "mysql2";
-import { db } from "@/lib/db";
-import { getSession } from "@/lib/auth";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-interface ClassRow extends RowDataPacket {
-  class_id: number;
-  class_name: string;
-  section: string;
-  academic_year: string;
-}
-
-export async function GET() {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ message: "Authentication required." }, { status: 401 });
-  try {
-    let sql = "SELECT class_id, class_name, section, academic_year FROM class";
-    const params: number[] = [];
-    if (user.role === "TEACHER") {
-      if (!user.teacherId) return NextResponse.json({ message: "Teacher profile is not linked." }, { status: 403 });
-      sql += " WHERE class_teacher_id = ? OR class_id IN (SELECT class_id FROM class_subject WHERE teacher_id = ?)";
-      params.push(user.teacherId, user.teacherId);
-    } else if (user.role === "STUDENT") {
-      if (!user.studentId) return NextResponse.json({ message: "Student profile is not linked." }, { status: 403 });
-      sql += " WHERE class_id = (SELECT class_id FROM student WHERE student_id = ?)";
-      params.push(user.studentId);
-    }
-    sql += " ORDER BY class_name, section";
-    const [classes] = await db.execute<ClassRow[]>(sql, params);
-    return NextResponse.json({ classes });
-  } catch {
-    return NextResponse.json({ message: "Unable to retrieve classes." }, { status: 503 });
-  }
-}
+import {NextRequest,NextResponse} from "next/server";
+import type {ResultSetHeader,RowDataPacket} from "mysql2";
+import {z} from "zod";
+import {db} from "@/lib/db";
+import {getSession} from "@/lib/auth";
+export const runtime="nodejs";export const dynamic="force-dynamic";
+interface ClassRow extends RowDataPacket{class_id:number;class_name:string;section:string;academic_year:string;room_no:string|null;class_teacher_id:number|null;teacher_name:string|null;}
+const schema=z.object({className:z.string().trim().min(1).max(30),section:z.string().trim().min(1).max(10),academicYear:z.string().regex(/^\d{4}-\d{4}$/),classTeacherId:z.number().int().positive().nullable().optional(),roomNo:z.string().max(20).nullable().optional()});
+export async function GET(){const u=await getSession();if(!u)return NextResponse.json({message:"Authentication required."},{status:401});try{let sql=`SELECT c.class_id,c.class_name,c.section,c.academic_year,c.room_no,c.class_teacher_id,CONCAT(t.first_name,' ',t.last_name) teacher_name FROM class c LEFT JOIN teacher t ON t.teacher_id=c.class_teacher_id`;const ps:number[]=[];if(u.role==="TEACHER"){sql+=" WHERE c.class_teacher_id=? OR c.class_id IN(SELECT class_id FROM class_subject WHERE teacher_id=?)";ps.push(u.teacherId||0,u.teacherId||0);}if(u.role==="STUDENT"){sql+=" WHERE c.class_id=(SELECT class_id FROM student WHERE student_id=?)";ps.push(u.studentId||0);}sql+=" ORDER BY c.academic_year DESC,c.class_name,c.section";const [rows]=await db.execute<ClassRow[]>(sql,ps);return NextResponse.json({classes:rows});}catch{return NextResponse.json({message:"Unable to load classes."},{status:503});}}
+export async function POST(req:NextRequest){const u=await getSession();if(!u)return NextResponse.json({message:"Authentication required."},{status:401});if(u.role!=="ADMIN")return NextResponse.json({message:"Admin access required."},{status:403});const p=schema.safeParse(await req.json().catch(()=>null));if(!p.success)return NextResponse.json({message:"Invalid class details."},{status:400});const d=p.data;try{const [r]=await db.execute<ResultSetHeader>("INSERT INTO class(class_name,section,academic_year,class_teacher_id,room_no) VALUES(?,?,?,?,?)",[d.className,d.section,d.academicYear,d.classTeacherId||null,d.roomNo||null]);return NextResponse.json({classId:r.insertId},{status:201});}catch(e){if((e as {code?:string}).code==="ER_DUP_ENTRY")return NextResponse.json({message:"This class, section and academic year already exist."},{status:409});return NextResponse.json({message:"Unable to create class. Check teacher ID."},{status:400});}}
