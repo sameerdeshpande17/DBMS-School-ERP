@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import type { RowDataPacket } from "mysql2";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+interface HealthRow extends RowDataPacket {
+  database_name: string;
+  mysql_version: string;
+}
 
 export async function GET() {
   try {
     const connection = await db.getConnection();
     try {
-      const [rows] = await connection.query<
-        Array<{ database_name: string; mysql_version: string }>
-      >("SELECT DATABASE() AS database_name, VERSION() AS mysql_version");
+      const [rows] = await connection.query<HealthRow[]>(
+        "SELECT DATABASE() AS database_name, VERSION() AS mysql_version"
+      );
       return NextResponse.json({
         status: "ok",
         database: rows[0]?.database_name ?? null,
