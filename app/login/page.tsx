@@ -47,6 +47,7 @@ export default function LoginPage() {
         <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         {error && <p className="login-error" role="alert">{error}</p>}
         <button className="login-submit" type="submit" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</button>
+        <p className="login-description"><a href="/student-login">Student login ↗</a></p>
       </form>
     </main>
   );
