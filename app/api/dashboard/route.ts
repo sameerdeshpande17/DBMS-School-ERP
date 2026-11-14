@@ -17,18 +17,44 @@ interface NoticeRow extends RowDataPacket {
 export async function GET() {
   const user = await getSession();
   if (!user) return NextResponse.json({ message: "Authentication required." }, { status: 401 });
-
   try {
     const connection = await db.getConnection();
     try {
-      const [students] = await connection.query<CountRow[]>("SELECT COUNT(*) AS total FROM student WHERE status = 'ACTIVE'");
-      const [teachers] = await connection.query<CountRow[]>("SELECT COUNT(*) AS total FROM teacher WHERE status = 'ACTIVE'");
-      const [classes] = await connection.query<CountRow[]>("SELECT COUNT(*) AS total FROM class");
+      let studentsQuery = "SELECT COUNT(*) AS total FROM student WHERE status = 'ACTIVE'";
+      const studentParams: number[] = [];
+      let teachersQuery = "SELECT COUNT(*) AS total FROM teacher WHERE status = 'ACTIVE'";
+      const teacherParams: number[] = [];
+      let classesQuery = "SELECT COUNT(*) AS total FROM class";
+      const classParams: number[] = [];
+
+      if (user.role === "TEACHER") {
+        if (!user.teacherId) return NextResponse.json({ message: "Teacher profile is not linked." }, { status: 403 });
+        studentsQuery += " AND class_id IN (SELECT class_id FROM class WHERE class_teacher_id = ? UNION SELECT class_id FROM class_subject WHERE teacher_id = ?)";
+        studentParams.push(user.teacherId, user.teacherId);
+        teachersQuery += " AND teacher_id = ?";
+        teacherParams.push(user.teacherId);
+        classesQuery += " WHERE class_teacher_id = ? OR class_id IN (SELECT class_id FROM class_subject WHERE teacher_id = ?)";
+        classParams.push(user.teacherId, user.teacherId);
+      } else if (user.role === "STUDENT") {
+        if (!user.studentId) return NextResponse.json({ message: "Student profile is not linked." }, { status: 403 });
+        studentsQuery += " AND student_id = ?";
+        studentParams.push(user.studentId);
+        teachersQuery = "SELECT COUNT(DISTINCT teacher_id) AS total FROM class_subject WHERE class_id = (SELECT class_id FROM student WHERE student_id = ?)";
+        teacherParams.push(user.studentId);
+        classesQuery += " WHERE class_id = (SELECT class_id FROM student WHERE student_id = ?)";
+        classParams.push(user.studentId);
+      }
+
+      const [students] = await connection.execute<CountRow[]>(studentsQuery, studentParams);
+      const [teachers] = await connection.execute<CountRow[]>(teachersQuery, teacherParams);
+      const [classes] = await connection.execute<CountRow[]>(classesQuery, classParams);
       const [subjects] = await connection.query<CountRow[]>("SELECT COUNT(*) AS total FROM subject");
-      const [notices] = await connection.query<NoticeRow[]>(
-        "SELECT notice_id, title, audience, published_at FROM notice WHERE status = 'PUBLISHED' AND (expires_at IS NULL OR expires_at >= NOW()) ORDER BY published_at DESC LIMIT 5"
+      const [notices] = await connection.execute<NoticeRow[]>(
+        "SELECT notice_id, title, audience, published_at FROM notice WHERE status = 'PUBLISHED' AND (audience = 'ALL' OR audience = ?) AND (expires_at IS NULL OR expires_at >= NOW()) ORDER BY published_at DESC LIMIT 5",
+        [user.role]
       );
       return NextResponse.json({
+        user: { username: user.username, role: user.role },
         counts: {
           students: Number(students[0]?.total ?? 0),
           teachers: Number(teachers[0]?.total ?? 0),
