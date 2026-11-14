@@ -20,6 +20,7 @@ interface UserRow extends RowDataPacket {
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(60),
   password: z.string().min(1).max(256),
+  expectedRole: z.enum(["ADMIN","TEACHER","STUDENT"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     );
     const account = rows[0];
 
-    if (!account || !account.is_active || !(await verifyPassword(parsed.data.password, account.password_hash))) {
+    if (!account || !account.is_active || (parsed.data.expectedRole && account.role !== parsed.data.expectedRole) || !(await verifyPassword(parsed.data.password, account.password_hash))) {
       return NextResponse.json({ message: "Invalid username or password." }, { status: 401 });
     }
 
